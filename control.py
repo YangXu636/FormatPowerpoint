@@ -328,7 +328,7 @@ def format_ppt(
             except Exception as e:
                 fail_log(f"catalogueFour {i}  {e = }")
         elif re.findall(
-            r"(\(|（)(图|表)\d{1,10}-\d{1,100}[A-Z | a-z]{0,}(）|\))", text
+            r"(\(|（)见{0,}(图|表)\d{1,10}-\d{1,100}[A-Z | a-z]{0,}(）|\))", text
         ) and (
             text.count("#fgf#") == 1
             or len([ik for ik in text.split("#fgf#") if ik]) == 1
@@ -342,7 +342,7 @@ def format_ppt(
                     NowCatalogue,
                     image_count,
                     re.search(
-                        r"(?<=#fgf#).*?(?:(\(|（)(图|表)\d{1,10}-\d{1,100}[A-Z | a-z]{0,}(）|\)))",
+                        r"(?<=#fgf#).*?(?:(\(|（)见{0,}(图|表)\d{1,10}-\d{1,100}[A-Z | a-z]{0,}(）|\)))",
                         text,
                     ).group(),
                     prs_size,
@@ -361,7 +361,7 @@ def format_ppt(
                     NowCatalogue,
                     image_count,
                     re.search(
-                        r"(?<=#fgf#).*?(?:(\(|（)(图|表)\d{1,10}-\d{1,100}[A-Z | a-z]{0,}(）|\)))",
+                        r"(?<=#fgf#).*?(?:(\(|（)见{0,}(图|表)\d{1,10}-\d{1,100}[A-Z | a-z]{0,}(）|\)))",
                         text,
                     ).group(),
                     have_paragraph[0]
@@ -400,11 +400,6 @@ def format_ppt(
             time.sleep(1)
         if i % 100 == 0:
             time.sleep(5)
-            try:
-                powerpoint.Quit()
-            except Exception:
-                pass
-            powerpoint = win32com.client.DispatchEx("PowerPoint.Application")
     del prs
     log(f"format_ppt end, life = {target_file}\n\n\n")
     return
