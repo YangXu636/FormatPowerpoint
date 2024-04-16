@@ -7,7 +7,7 @@
 cmd内运行以下命令：
 
 ```none
-//请确保您的计算机上以安装过python3.x 、 git等软件并配置好环境变量。推荐使用python3.11版本。
+//请确保您的计算机上以安装了python3.11 、 git等软件并配置好环境变量。
 
 //git clone项目
 git clone https://github.com/YangXu636/FormatPowerpoint.git
