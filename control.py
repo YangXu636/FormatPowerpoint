@@ -401,12 +401,9 @@ def format_ppt(
         if i % 100 == 0:
             time.sleep(5)
             try:
-                win32clipboard.OpenClipboard()
-                win32clipboard.EmptyClipboard()
-                win32clipboard.CloseClipboard()
+                powerpoint.Quit()
             except Exception:
                 pass
-            powerpoint.Quit()
             powerpoint = win32com.client.DispatchEx("PowerPoint.Application")
     del prs
     log(f"format_ppt end, life = {target_file}\n\n\n")
