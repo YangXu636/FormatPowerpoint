@@ -4,9 +4,7 @@ from tkinter import filedialog
 import os
 import time
 import control
-import asyncio
 import win32com.client
-from pptx import Presentation  # noqa: F401
 
 mbPPT_Path = ""
 needPPT_Path = ""
