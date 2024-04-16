@@ -4,5 +4,9 @@
 ## 运行方式
 cmd内运行:
 ```
-python3 FormatPowerpoint.py
+python3 main.py
+```
+打包运行:
+```
+pyinstaller -D main.py
 ```
