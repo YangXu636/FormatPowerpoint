@@ -23,7 +23,7 @@ pip install -r requirements.txt
 在`.\FormatPowerpoint`目录下cmd内运行以下命令:
 
 ```none
-python3 main.py
+python3 .\v1\main.py
 ```
 
 ### 打包运行
@@ -33,15 +33,15 @@ python3 main.py
 ```none
 //生成文件夹
 .venv\Scripts\activate
-pyinstaller --distpath .\toExe\dist -D main.py
+pyinstaller --distpath .\toExe\dist -D .\v1\main.py
 
 //或生成单个文件
 .venv\Scripts\activate
-pyinstaller --distpath .\toExe\dist -F main.py
+pyinstaller --distpath .\toExe\dist -F .\v1\main.py
 
 //带图标
 .venv\Scripts\activate
-pyinstaller --distpath .\toExe\dist -F -i icon.ico main.py
+pyinstaller --distpath .\toExe\dist -F -i icon.ico .\v1\main.py
 ```
 
 ## 注意事项
@@ -54,4 +54,3 @@ pyinstaller --distpath .\toExe\dist -F -i icon.ico main.py
 6. 程序运行结束后若无法使用PowerPoint或打开文件，请使用任务管理器关闭所有PowerPoint进程，并重试。
 7. 格式化结束后由于识别精度问题，仍需要人工排查错误。
 8. 程序特异性较为严重，使用其他模板ppt时目前需要按照特殊格式修改模板ppt。
-

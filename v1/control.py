@@ -2,7 +2,6 @@ import shutil
 import zipfile
 import os
 import win32com.client
-import win32clipboard
 import pywintypes
 import time
 from pptx import Presentation
