@@ -952,7 +952,7 @@ def set_ppt_title(mb_file, ppt_file, target_file, log):
         prs.slide_layouts[title["Index"]],
     ]
     if not os.path.exists(os.path.dirname(target_file) + "\\"):
-        os.mkdir(os.path.dirname(target_file) + "\\")
+        os.makedirs(os.path.dirname(target_file) + "\\")
     target = powerpoint.Presentations.Add()
     target.SaveAs(target_file)
     target.Close()
