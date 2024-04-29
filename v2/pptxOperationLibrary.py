@@ -4,29 +4,46 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE  # noqa
 from pptx.util import Emu
 import win32com.client
 import os
-from typing import overload
 
 
 class pptxOp:
     """Better Powerpoint Operation Library"""
 
-    def __init__(self, file_path, t=10):
+    def __init__(self, file_path: str, t: int = 10) -> None:
+        """
+        __init__(file_path [,t=10])
+
+        Initialize the pptxOp object.
+
+        Parameters:
+            file_path (str): The path of the Powerpoint file.
+            t (int): The number of repeated trial and error attempts.
+
+        Returns:
+            None
+        """
         self.file_path = file_path
         self.t = t
 
-    @overload
     def newFile(self) -> None:
         """
-        new_file()
+        newFile()
 
         Create a new Powerpoint file.
+
+        Parameters:
+            None
+
+        Returns:
+            None
         """
         t = self.t
         while t > 0:
             try:
                 powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
-
                 prs = powerpoint.Presentations.Add()
+                if not os.path.exists(os.path.dirname(self.file_path) + "\\"):
+                    os.makedirs(os.path.dirname(self.file_path) + "\\")
                 prs.SaveAs(self.file_path)
                 prs.Close()
                 powerpoint.Quit()
@@ -41,44 +58,20 @@ class pptxOp:
                 t -= 1
         raise pptxOpError.FileCouldNotBeCreatedError(self.file_path)
 
-    @staticmethod
-    def newFile(file_path: str, t: int = 10) -> None:
-        """
-        new_file(file_path [,t=10])
-
-        Create a new Powerpoint file.
-        """
-
-        while t > 0:
-            try:
-                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
-
-                prs = powerpoint.Presentations.Add()
-                prs.SaveAs(file_path)
-                prs.Close()
-                powerpoint.Quit()
-                return
-            except Exception as e:
-                print(e)
-                try:
-                    prs.Close()
-                except Exception:
-                    pass
-                powerpoint.Quit()
-                t -= 1
-        raise pptxOpError.FileCouldNotBeCreatedError(file_path)
-
-    @overload
     def pptFileConversion(
         self, new_file_format: str, new_file_path: str = None
     ) -> None:
         """
-        ppt_file_conversion(new_file_format,  [,new_file_path=None])
+        pptFileConversion(new_file_format,  [,new_file_path=None])
 
         Convert Powerpoint file to new_file_format.
 
-        new_file_format: 'ppt', 'pptx', 'pdf', 'png', 'jpg', 'gif', 'tiff', 'bmp'
-        new_file_path: new file path.
+        Parameters:
+            new_file_format (str): The new file format. 'pptx', 'pdf', 'png', 'jpg', 'gif', 'tiff', 'bmp'
+            new_file_path (str): The new file path. If None, the new file will be saved in the same directory as the original file with the same name as the original file but with the new file format.
+
+        Returns:
+            None
         """
         t = self.t
         if not os.path.exists(self.file_path):
@@ -87,18 +80,19 @@ class pptxOp:
             new_file_path = os.path.splitext(self.file_path)[0] + "." + new_file_format
         else:
             new_file_path = (
-                new_file_path
-                + os.path.basename(self.file_path).split(".")[0]
-                + "."
-                + new_file_format
+                new_file_path + os.path.basename(self.file_path).split(".")[0]
             )
+        print(new_file_path)
         if not os.path.exists(os.path.dirname(new_file_path)):
             os.makedirs(os.path.dirname(new_file_path))
         while t > 0:
             try:
                 powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
                 prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
-                prs.SaveAs(new_file_path, FileFormat=new_file_format)
+                # prs.SaveCopyAs(
+                #     new_file_path, FileFormat=PpSaveAsFileType()[new_file_format]
+                # )
+                prs.SaveCopyAs(new_file_path + "." + new_file_format)
                 prs.Close()
                 powerpoint.Quit()
                 return
@@ -112,64 +106,24 @@ class pptxOp:
                 t -= 1
         raise pptxOpError.FileCouldNotBeConvertedError(self.file_path, new_file_format)
 
-    @staticmethod
-    def pptFileConversion(
-        file: str, new_file_format: str, new_file_path: str = None, t: int = 10
-    ) -> None:
-        """
-        ppt_file_conversion(file, new_file_format,  [,new_file_path=None] [,t=10])
-
-        Convert Powerpoint file to new_file_format.
-
-        new_file_format: 'ppt', 'pptx', 'pdf', 'png', 'jpg', 'gif', 'tiff', 'bmp'
-        new_file_path: new file path.
-        t is the number of repeated trial and error attempts.
-        """
-        if not os.path.exists(file):
-            raise pptxOpError.FileNotFoundError(file)
-        if new_file_path is None:
-            new_file_path = os.path.splitext(file)[0] + "." + new_file_format
-        else:
-            new_file_path = (
-                new_file_path
-                + os.path.basename(file).split(".")[0]
-                + "."
-                + new_file_format
-            )
-        if not os.path.exists(os.path.dirname(new_file_path)):
-            os.makedirs(os.path.dirname(new_file_path))
-        while t > 0:
-            try:
-                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
-                prs = powerpoint.Presentations.Open(file, WithWindow=False)
-                prs.SaveAs(new_file_path, FileFormat=new_file_format)
-                prs.Close()
-                powerpoint.Quit()
-                return
-            except Exception as e:
-                print(e)
-                try:
-                    prs.Close()
-                except Exception:
-                    pass
-                powerpoint.Quit()
-                t -= 1
-        raise pptxOpError.FileCouldNotBeConvertedError(file, new_file_format)
-
-    @overload
-    def copySlide(
+    def slideCopy(
         self,
         from_file_path: str,
         slide_num: int,
         new_slide_num: int = -1,
     ) -> None:
         """
-        copy_slide(self, from_file_path, slide_num [,new_slide_num=len(self.slides)+1])
+        slideCopy(self, from_file_path, slide_num [,new_slide_num=len(self.slides)+1])
 
         Copy slide from \"from_file_path\" to \"self.file_path\".
 
-        slide_num from 1 to len(self.slides).
-        new_slide_num from 1 to len(self.slides)+1.
+        Parameters:
+            from_file_path (str): The path of the Powerpoint file to copy from.
+            slide_num (int): The number of the slide to copy.
+            new_slide_num (int): The number of the new slide. If -1, the new slide will be added to the end of the Powerpoint file.
+
+        Returns:
+            None
         """
         t = self.t
         if not os.path.exists(from_file_path):
@@ -207,64 +161,17 @@ class pptxOp:
             from_file_path, slide_num, self.file_path, new_slide_num
         )
 
-    @staticmethod
-    def copySlide(
-        from_file_path: str,
-        slide_num: int,
-        new_file_path: str,
-        new_slide_num: int = -1,
-        t: int = 10,
-    ) -> None:
-        """
-        copy_slide(from_file_path, slide_num, new_file_path,  [,new_slide_num=len(self.slides)+1] [,t=10])
-
-        Copy slide from \"from_file_path\" to \"self.file_path\".
-
-        slide_num from 1 to len(self.slides).
-        new_slide_num from 1 to len(self.slides)+1.
-        t is the number of repeated trial and error attempts.
-        """
-        if not os.path.exists(from_file_path):
-            raise pptxOpError.FileNotFoundError(from_file_path)
-        if not os.path.exists(new_file_path):
-            pptxOp.new_file(new_file_path)
-        if new_slide_num == -1 or new_slide_num > len(new_file_path):
-            new_slide_num = len(new_file_path) + 1
-        while t > 0:
-            try:
-                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
-                from_prs = powerpoint.Presentations.Open(
-                    from_file_path, WithWindow=False
-                )
-                from_prs.Slides(slide_num).Copy()
-                from_prs.Close()
-                to_prs = powerpoint.Presentations.Open(new_file_path, WithWindow=False)
-                to_prs.Slides().Paste(new_slide_num)
-                to_prs.Save()
-                to_prs.Close()
-                return
-            except Exception as e:
-                print(e)
-                try:
-                    from_prs.Close()
-                except Exception:
-                    pass
-                try:
-                    to_prs.Close()
-                except Exception:
-                    pass
-                powerpoint.Quit()
-                t -= 1
-        raise pptxOpError.SlideCouldNotBeCopiedError(
-            from_file_path, slide_num, new_file_path, new_slide_num
-        )
-
-    @overload
     def slidesCount(self) -> int:
         """
-        slides_count() -> int
+        slidesCount() -> int
 
         Return the number of slides in the Powerpoint file.
+
+        Parameters:
+            None
+
+        Returns:
+            int: The number of slides in the Powerpoint file.
         """
         t = self.t
         while t > 0:
@@ -285,38 +192,17 @@ class pptxOp:
                 t -= 1
         raise pptxOpError.FileCouldNotBeOpenedError(self.file_path)
 
-    @staticmethod
-    def slidesCount(file_path: str, t: int = 10) -> int:
-        """
-        slides_count(file_path [,t=10]) -> int
-
-        Return the number of slides in the Powerpoint file.
-        """
-        while t > 0:
-            try:
-                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
-
-                prs = powerpoint.Presentations.Open(file_path, WithWindow=False)
-                slides_count = len(prs.Slides)
-                prs.Close()
-                powerpoint.Quit()
-                return slides_count
-            except Exception as e:
-                print(e)
-                try:
-                    prs.Close()
-                except Exception:
-                    pass
-                powerpoint.Quit()
-                t -= 1
-        raise pptxOpError.FileCouldNotBeOpenedError(file_path)
-
-    @overload
     def slideSize(self) -> tuple:
         """
-        size() -> tuple(Pt, Pt)
+        slideSize() -> tuple(Pt, Pt)
 
         Return the size of the Powerpoint file in (width, height) format.
+
+        Parameters:
+            None
+
+        Returns:
+            tuple(Pt, Pt): The size of the Powerpoint file in (width, height) format.
         """
         t = self.t
         while t > 0:
@@ -334,19 +220,76 @@ class pptxOp:
                 t -= 1
         raise pptxOpError.FileCouldNotBeOpenedError(self.file_path)
 
-    @staticmethod
-    def slideSize(file_path: str, t: int = 10) -> tuple:
+    def slideTexts(self, slide_num: int) -> list[str]:
         """
-        size(file_path [,t=10]) -> tuple(Pt, Pt)
+        slideText(slide_num) -> list[str]
 
-        Return the size of the Powerpoint file in (width, height) format.
+        Return the text of the slide in slide_num.
+
+        Parameters:
+            slide_num (int): The number of the slide to read.
+
+        Returns:
+            list[str]: The text of the slide in slide_num.
         """
+        t = self.t
         while t > 0:
             try:
-                prs = pptx.Presentation(file_path)
-                width, height = Emu(prs.slide_width).pt, Emu(prs.slide_height).pt
+                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
+                for i in prs.Slides(slide_num).Shapes:
+                    if i.Type == MSO_SHAPE_TYPE.GROUP:
+                        i.Ungroup()
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
+                text = [
+                    shape.TextFrame.TextRange.Text
+                    for shape in prs.Slides(slide_num).Shapes
+                    if shape.TextFrame.HasText
+                ]
+                prs.Close()
+                powerpoint.Quit()
+                return text
+            except Exception as e:
+                print(e)
+                try:
+                    prs.Close()
+                except Exception:
+                    pass
+                powerpoint.Quit()
+                t -= 1
+        raise pptxOpError.SlideCouldNotBeReadError(self.file_path, slide_num)
+
+    def slidePictures(self, slide_num: int) -> list:
+        """
+        slidePictures(slide_num) -> list
+
+        Return the blob of the picture in slide_num.
+
+        Parameters:
+            slide_num (int): The number of the slide to read.
+
+        Returns:
+            list: The blob of the picture in slide_num.
+        """
+        t = self.t
+        while t > 0:
+            try:
+                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
+                for i in prs.Slides(slide_num).Shapes:
+                    if i.Type == MSO_SHAPE_TYPE.GROUP:
+                        i.Ungroup()
+                prs.Save()
+                prs.Close()
+                powerpoint.Quit()
+                prs = pptx.Presentation(self.file_path)
+                images = [
+                    pic.image.blob
+                    for pic in prs.slides[slide_num - 1].shapes
+                    if pic.shape_type == MSO_SHAPE_TYPE.PICTURE
+                ]
                 del prs
-                return (width, height)
+                return images
             except Exception as e:
                 print(e)
                 try:
@@ -354,4 +297,4 @@ class pptxOp:
                 except Exception:
                     pass
                 t -= 1
-        raise pptxOpError.FileCouldNotBeOpenedError(file_path)
+        raise pptxOpError.SlideCouldNotBeReadError(self.file_path, slide_num)

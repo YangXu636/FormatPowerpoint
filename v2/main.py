@@ -19,10 +19,16 @@ if __name__ == "__main__":
         app.log(f"PowerPoint 路径：{powerpoint.Path}")
         if powerpoint.Version < "16.0":
             app.log(
-                "PowerPoint 版本可能较低，部分程序可能无法运行，若出现相关报错，请升级到最新版本或至少 2016 版本 。"
+                "PowerPoint 版本可能较低，部分程序可能无法运行，若出现相关报错，请升级到最新版本或至少 2016 版本 。",
+                lvl="Warning",
             )
     except Exception as e:
-        app.log(f"PowerPoint 未安装或未激活，请先安装或激活 PowerPoint。错误信息：{e}")
+        app.log(
+            f"PowerPoint 未安装或未激活，请先安装或激活 PowerPoint。错误信息：{e}",
+            lvl="Error",
+        )
+        powerpoint.Quit()
+        time.sleep(60)
         exit()
     app.log(
         f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))} 开始运行"

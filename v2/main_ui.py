@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import filedialog
-import os  # noqa
-import time  # noqa
+import os
+from betterTime import BetterTime as btime
 import main_control
-import win32com.client  # noqa
 from pptxOperationLibrary import pptxOp
+from typing import Literal
 
 mbPPT_Path = ""
 needPPT_Path = ""
@@ -15,6 +15,7 @@ finish_index = 2
 class WinGUI(tk.Tk):
     def __init__(self):
         super().__init__()
+        self.thisTime = btime.timeName()
         self.__win()
         self.tk_label_mbPPT_label = self.__tk_label_mbPPT_label(self)
         self.tk_input_mbPPT_input = self.__tk_input_mbPPT_input(self)
@@ -43,6 +44,7 @@ class WinGUI(tk.Tk):
         self.tk_button_about_button = self.__tk_button_about_button(self)
         self.tk_label_fanwei_label = self.__tk_label_fanwei_label(self)
         self.tk_label_to_label = self.__tk_label_to_label(self)
+        self.tk_input_runCommand = self.__tk_input_runCommand(self)
         start_index.trace_add(
             "write",
             lambda a, b, c: self.log(
@@ -54,6 +56,15 @@ class WinGUI(tk.Tk):
             lambda a, b, c: self.log(
                 f"设置需格式化ppt范围为: {start_index.get()}~{finish_index.get()} {a = } {b = } {c = }"
             ),
+        )
+        self.tk_text_log_text.tag_configure(
+            "InfoLog", foreground="black", background="white"
+        )
+        self.tk_text_log_text.tag_configure(
+            "WarningLog", foreground="purple", background="yellow"
+        )
+        self.tk_text_log_text.tag_configure(
+            "ErrorLog", foreground="yellow", background="red"
         )
 
     def __win(self):
@@ -241,7 +252,7 @@ class WinGUI(tk.Tk):
             parent,
             textvariable=start_index,
         )
-        ipt.place(relx=0.2500, rely=0.0950, relwidth=0.1250, relheight=0.0375)
+        ipt.place(relx=0.2500, rely=0.0950, relwidth=0.0500, relheight=0.0375)
         return ipt
 
     def __tk_input_finish_index_input(self, parent):
@@ -249,7 +260,7 @@ class WinGUI(tk.Tk):
             parent,
             textvariable=finish_index,
         )
-        ipt.place(relx=0.4000, rely=0.0950, relwidth=0.1250, relheight=0.0375)
+        ipt.place(relx=0.3250, rely=0.0950, relwidth=0.0500, relheight=0.0375)
         return ipt
 
     def __tk_button_settings_button(self, parent):
@@ -285,8 +296,15 @@ class WinGUI(tk.Tk):
             text="~",
             anchor="center",
         )
-        label.place(relx=0.3750, rely=0.0950, relwidth=0.0250, relheight=0.0375)
+        label.place(relx=0.3000, rely=0.0950, relwidth=0.0250, relheight=0.0375)
         return label
+
+    def __tk_input_runCommand(self, parent):
+        ipt = tk.Entry(
+            parent,
+        )
+        ipt.place(relx=0.3850, rely=0.0950, relwidth=0.2500, relheight=0.0375)
+        return ipt
 
     def selectMbpptPath(self):
         _path = filedialog.askopenfilename(
@@ -309,44 +327,64 @@ class WinGUI(tk.Tk):
         start_index.set(1)
         # self.tk_input_start_index_input.config(state="readonly")
         global finish_index
-        finish_index.set(pptxOp.slidesCount(needPPT_Path.get()))
+        nfPpt = pptxOp(needPPT_Path.get())
+        finish_index.set(nfPpt.slidesCount())
+        del nfPpt
         self.log(f"设置需格式化ppt范围为: {start_index.get()}~{finish_index.get()}")
         self.focus_set()
 
     def startForm(self):
         self.log(f"模板ppt路径: {mbPPT_Path.get()}")
         if mbPPT_Path.get() == "":
-            self.log("模板ppt路径不能为空。")
+            self.log("模板ppt路径不能为空。", lvl="Error")
             return
         self.log(f"需格式化ppt路径: {needPPT_Path.get()}")
         if needPPT_Path.get() == "":
-            self.log("需格式化ppt路径不能为空。")
+            self.log("需格式化ppt路径不能为空。", lvl="Error")
             return
         self.log("开始复制PPT...")
         localPath = os.getcwd()
+        self.thisTime = btime.timeName()
         mbName = os.path.basename(mbPPT_Path.get()).split(".")[0]
         nfName = os.path.basename(needPPT_Path.get()).split(".")[0]
-        self.log(f"模板ppt名称: {mbName}\n需格式化ppt名称: {nfName}")
+        targetName = nfName + self.thisTime
+        self.log(
+            f"模板ppt名称: {mbName}\n需格式化ppt名称: {nfName}\n目标ppt名称: {targetName}"
+        )
         try:
-            pptxOp.pptFileConversion(
-                mbPPT_Path.get(), "pptx", localPath + "\\sourceFile\\", 10
-            )
-            pptxOp.pptFileConversion(
-                needPPT_Path.get(), "pptx", localPath + "\\sourceFile\\", 10
-            )
-            main_control.ZipExtract(
-                localPath + "\\sourceFile\\" + nfName + ".pptx",
-                localPath + "\\sourceFile\\" + nfName + "\\",
-            )
+            mbPpt = pptxOp(mbPPT_Path.get())
+            mbPpt.pptFileConversion("pptx", localPath + "\\sourceFile\\")
+            del mbPpt
+            nfPpt = pptxOp(needPPT_Path.get())
+            nfPpt.pptFileConversion("pptx", localPath + "\\sourceFile\\")
+            del nfPpt
+            # main_control.ZipExtract(localPath + "\\sourceFile\\" + nfName + ".pptx",localPath + "\\sourceFile\\" + nfName + "\\")
         except Exception as e:
-            self.log(f"复制PPT失败, 原因: {e}\n格式化失败。")
+            self.log(f"复制PPT失败, 原因: {e}\n格式化失败。", lvl="Error")
             return
         self.log("复制PPT成功。")
+        self.log("开始格式化PPT...")
+        self.log(f"需格式化ppt范围: {start_index.get()}~{finish_index.get()}")
+        try:
+            main_control.format_powerpoint(
+                localPath + "\\sourceFile\\",
+                localPath + "\\resultFile\\",
+                mbName,
+                nfName,
+                targetName,
+                int(start_index.get()),
+                int(finish_index.get()),
+                self.log,
+                self.success_log,
+                self.fail_log,
+            )
+        except Exception as e:
+            self.log(f"格式化失败, 原因: {e}", lvl="Error")
+            return
+        return
 
     def save_log(self):
         localPath = os.getcwd()
-        if "thisTime" not in vars(self).keys():
-            self.thisTime = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
         if not os.path.exists(localPath + "\\logs\\"):
             os.mkdir(localPath + "\\logs\\")
         os.mkdir(localPath + "\\logs\\" + self.thisTime + "\\")
@@ -374,9 +412,17 @@ class WinGUI(tk.Tk):
         self.destroy()
         return
 
-    def log(self, msg):
+    def log(self, msg, lvl: Literal["Info", "Warning", "Error"] = "Info"):
         self.tk_text_log_text.config(state=tk.NORMAL)
-        self.tk_text_log_text.insert(tk.END, msg + "\n")
+        self.tk_text_log_text.insert(
+            tk.END,
+            f"({btime.timeLog()})[{lvl}]  " + msg + "\n",
+            "InfoLog"
+            if lvl == "Info"
+            else "ErrorLog"
+            if lvl == "Error"
+            else "WarningLog",
+        )
         self.tk_text_log_text.config(state=tk.DISABLED)
         return
 

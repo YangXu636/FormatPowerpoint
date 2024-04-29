@@ -47,3 +47,14 @@ class FileCouldNotBeConvertedError(Exception):
 
     def __str__(self):
         return f'File "{self.file}" could not be converted to {self.to_format}.'
+
+
+class SlideCouldNotBeReadError(Exception):
+    """Raised when a slide could not be read."""
+
+    def __init__(self, file_path, slide_num):
+        self.file_path = file_path
+        self.slide_num = slide_num
+
+    def __str__(self):
+        return f'Slide 【{self.slide_num}】 from file "{self.file_path}" could not be read.'
