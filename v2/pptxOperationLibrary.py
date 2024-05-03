@@ -1,9 +1,13 @@
 import pptxOperationError as pptxOpError
+from xyEnum import PpSaveAsFileType  # noqa
 import pptx
-from pptx.enum.shapes import MSO_SHAPE_TYPE  # noqa
+from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.util import Emu
 import win32com.client
 import os
+from typing import Literal
+import io
+from PIL import Image
 
 
 class pptxOp:
@@ -25,9 +29,9 @@ class pptxOp:
         self.file_path = file_path
         self.t = t
 
-    def newFile(self) -> None:
+    def fileNew(self) -> None:
         """
-        newFile()
+        fileNew()
 
         Create a new Powerpoint file.
 
@@ -129,7 +133,7 @@ class pptxOp:
         if not os.path.exists(from_file_path):
             raise pptxOpError.FileNotFoundError(from_file_path)
         if not os.path.exists(self.file_path):
-            pptxOp.new_file(self.file_path)
+            pptxOp.fileNew(self.file_path)
         if new_slide_num == -1:
             new_slide_num = len(self.file_path) + 1
         while t > 0:
@@ -146,6 +150,7 @@ class pptxOp:
                 to_prs.Close()
                 return
             except Exception as e:
+                error = e
                 print(e)
                 try:
                     from_prs.Close()
@@ -158,7 +163,7 @@ class pptxOp:
                 powerpoint.Quit()
                 t -= 1
         raise pptxOpError.SlideCouldNotBeCopiedError(
-            from_file_path, slide_num, self.file_path, new_slide_num
+            from_file_path, slide_num, self.file_path, new_slide_num, error
         )
 
     def slidesCount(self) -> int:
@@ -250,6 +255,7 @@ class pptxOp:
                 powerpoint.Quit()
                 return text
             except Exception as e:
+                error = e
                 print(e)
                 try:
                     prs.Close()
@@ -257,7 +263,7 @@ class pptxOp:
                     pass
                 powerpoint.Quit()
                 t -= 1
-        raise pptxOpError.SlideCouldNotBeReadError(self.file_path, slide_num)
+        raise pptxOpError.SlideCouldNotBeReadError(self.file_path, slide_num, error)
 
     def slidePictures(self, slide_num: int) -> list:
         """
@@ -291,10 +297,319 @@ class pptxOp:
                 del prs
                 return images
             except Exception as e:
+                error = e
                 print(e)
                 try:
                     del prs
                 except Exception:
                     pass
                 t -= 1
-        raise pptxOpError.SlideCouldNotBeReadError(self.file_path, slide_num)
+        raise pptxOpError.SlideCouldNotBeReadError(self.file_path, slide_num, error)
+
+    def slide2Image(
+        self,
+        slide_num: int,
+        image_path: str,
+        image_name: str,
+        image_format: Literal["png", "jpg", "gif", "tiff", "bmp"] = "png",
+    ) -> None:
+        """
+        slide2Image(slide_num, image_path [,image_format="png"])
+
+        Save the slide in slide_num as an image file.
+
+        Parameters:
+            slide_num (int): The number of the slide to save.
+            image_path (str): The path of the image file to save.
+            image_format (str): The format of the image file. 'png', 'jpg', 'gif', 'tiff', 'bmp'
+
+        Returns:
+            None
+        """
+        t = self.t
+        while t > 0:
+            try:
+                if not os.path.exists(image_path):
+                    os.makedirs(image_path)
+                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
+                for i in prs.Slides(slide_num).Shapes:
+                    if i.Type == MSO_SHAPE_TYPE.GROUP:
+                        i.Ungroup()
+                prs.Save()
+                prs.Slides(slide_num).Export(
+                    image_path + f"\\{image_name}.{image_format}",
+                    image_format.upper(),
+                )
+                prs.Close()
+                powerpoint.Quit()
+                return
+            except Exception as e:
+                error = e
+                print(e)
+                try:
+                    del prs
+                except Exception:
+                    pass
+                t -= 1
+        raise pptxOpError.SlideCouldNotBeSavedAsOtherFormatError(
+            self.file_path, slide_num, image_format, error
+        )
+
+    def slide2Bytes(
+        self,
+        slide_num: int,
+        image_format: Literal["png", "jpg", "gif", "tiff", "bmp"] = "png",
+    ) -> bytes:
+        """
+        slide2Bytes(slide_num, image_format="png") -> bytes
+
+        Return the slide in slide_num as a bytes object.
+
+        Parameters:
+            slide_num (int): The number of the slide to save.
+            image_format (str): The format of the image file. 'png', 'jpg', 'gif', 'tiff', 'bmp'
+
+        Returns:
+            bytes: The slide in slide_num as a bytes object.
+        """
+        t = self.t
+        while t > 0:
+            try:
+                tmpPath = os.getenv("TEMP")
+                if not tmpPath:
+                    tmpPath = f"C:\\Users\\{os.getlogin()}\\AppData\\Local\\Temp"
+                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
+                for i in prs.Slides(slide_num).Shapes:
+                    if i.Type == MSO_SHAPE_TYPE.GROUP:
+                        i.Ungroup()
+                prs.Save()
+                slide = prs.Slides(slide_num)
+                slide.Export(
+                    f"{tmpPath}\\SLIDE_{slide_num}.{image_format}", image_format.upper()
+                )
+                with open(f"{tmpPath}\\SLIDE_{slide_num}.{image_format}", "rb") as f:
+                    data = f.read()
+                os.remove(f"{tmpPath}\\SLIDE_{slide_num}.{image_format}")
+                prs.Close()
+                powerpoint.Quit()
+                return io.BytesIO(data)
+            except Exception as e:
+                error = e
+                print(e)
+                try:
+                    prs.Close()
+                except Exception:
+                    pass
+                powerpoint.Quit()
+                t -= 1
+        raise pptxOpError.SlideCouldNotBeSavedAsOtherFormatError(
+            self.file_path, slide_num, image_format, error
+        )
+
+    def textChange(self, slide_num: int, text: str, new_text: str) -> None:
+        """
+        textChange(slide_num, text, new_text) -> None
+
+        Change the text of the slide in slide_num to new_text.
+
+
+
+        Parameters:
+            slide_num (int): The number of the slide to change.
+            text (str): The text to change.
+            new_text (str): The new text.
+
+        Returns:
+            None
+        """
+        t = self.t
+        while t > 0:
+            try:
+                flag = False
+                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
+                for i in prs.Slides(slide_num).Shapes:
+                    if i.Type == MSO_SHAPE_TYPE.GROUP:
+                        i.Ungroup()
+                for shape in prs.Slides(slide_num).Shapes:
+                    if shape.HasTextFrame and shape.TextFrame.HasText:
+                        if shape.TextFrame.TextRange.Text == text:
+                            shape.TextFrame.TextRange.Text = new_text
+                            flag = True
+                if not flag:
+                    raise pptxOpError.TextCouldNotBeChangedError(
+                        self.file_path, slide_num, text, new_text, "Text not found"
+                    )
+                prs.Save()
+                prs.Close()
+                powerpoint.Quit()
+                return
+            except Exception as e:
+                error = e
+                print(e)
+                try:
+                    prs.Close()
+                except Exception:
+                    pass
+                powerpoint.Quit()
+                t -= 1
+        raise pptxOpError.TextCouldNotBeChangedError(
+            self.file_path, slide_num, text, new_text, error
+        )
+
+    def pictureAdd(
+        self,
+        slide_num: int,
+        image_path: str | bytes,
+        left: int,
+        top: int,
+        width: int = -1,
+        height: int = -1,
+    ) -> None:
+        """
+        pictureAdd(slide_num, image_path, left, top [,width=-1] [,height=-1]) -> None
+
+        Add a picture to the slide in slide_num.
+
+        Parameters:
+            slide_num (int): The number of the slide to add the picture.
+            image_path (str | bytes): The path of the image file or the bytes object of the image.
+            left (int): The left position of the picture. The unit is in Pt.
+            top (int): The top position of the picture. The unit is in Pt.
+            width (int): The width of the picture. The unit is in Pt.
+            height (int): The height of the picture. The unit is in Pt.
+
+        Returns:
+            None
+        """
+        t = self.t
+        img = Image.open(image_path)
+        if width <= 0:
+            width = Emu(img.width).pt
+        if height <= 0:
+            height = Emu(img.height).pt
+        img.close()
+        while t > 0:
+            try:
+                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
+                slide = prs.Slides(slide_num)
+                slide.Shapes.AddPicture(
+                    image_path,
+                    left,
+                    top,
+                    width,
+                    height,
+                )
+                prs.Save()
+                prs.Close()
+                powerpoint.Quit()
+                return
+            except Exception as e:
+                error = e
+                print(e)
+                try:
+                    prs.Close()
+                except Exception:
+                    pass
+                powerpoint.Quit()
+                t -= 1
+        raise pptxOpError.PictureCouldNotBeAddedError(
+            self.file_path, slide_num, image_path, left, top, error
+        )
+
+    def pictureChange(self, slide_num: int, old_image_bytes, new_image_bytes) -> None:
+        """
+        pictureChange(slide_num, old_image_bytes, new_image_bytes) -> None
+
+        Change the picture of the slide in slide_num to new_image_bytes.
+
+        Parameters:
+            slide_num (int): The number of the slide to change.
+            old_image_bytes (blob): The bytes object of the old image.
+            new_image_bytes (_io.BytesIO): The bytes object of the new image.
+
+        Returns:
+            None
+        """
+        t = self.t
+        while t > 0:
+            try:
+                prs = pptx.Presentation(self.file_path)
+                prs_size = (Emu(prs.slide_width).pt, Emu(prs.slide_height).pt)
+                del prs
+                flag = False
+                old_image_size = []
+                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
+                for i in prs.Slides(slide_num).Shapes:
+                    if i.Type == MSO_SHAPE_TYPE.GROUP:
+                        i.Ungroup()
+                for shape in prs.Slides(slide_num).Shapes:
+                    if shape.Type == MSO_SHAPE_TYPE.PICTURE:
+                        if (
+                            io.BytesIO(shape.PictureFormat.Picture.Image.blob)
+                            == old_image_bytes
+                        ):
+                            flag = True
+                            old_image_size = [
+                                shape.Width,
+                                shape.Height,
+                                shape.Left,
+                                shape.Top,
+                            ]
+                            shape.Delete()
+                if not flag:
+                    raise pptxOpError.PictureCouldNotBeChangedError(
+                        self.file_path,
+                        slide_num,
+                        old_image_bytes,
+                        new_image_bytes,
+                        "Picture not found",
+                    )
+                slide = prs.Slides(slide_num)
+                if isinstance(new_image_bytes, bytes):
+                    new_image = Image.open(io.BytesIO(new_image_bytes))
+                    new_image_bytes = os.getenv("TEMP") + "\\new_image.png"
+                    new_image.save(new_image_bytes)
+                    new_image.close()
+                new_image = Image.open(new_image_bytes)
+                new_image_size = new_image.size
+                new_image.close()
+                new_image_size = (
+                    new_image_size[0] / new_image_size[1] * old_image_size[1],
+                    old_image_size[1],
+                )
+                if new_image_size[0] > prs_size[0]:
+                    new_image_size = (
+                        prs_size[0],
+                        prs_size[0] / new_image_size[0] * new_image_size[1],
+                    )
+                slide.Shapes.AddPicture(
+                    new_image_bytes,
+                    prs_size[0] / 2.0000,
+                    old_image_size[3]
+                    + old_image_size[1] / 2.0000
+                    - new_image_size[1] / 2.0000,
+                    new_image_size[0],
+                    new_image_size[1],
+                )
+                os.remove(new_image_bytes)
+                prs.Save()
+                prs.Close()
+                powerpoint.Quit()
+                return
+            except Exception as e:
+                error = e
+                print(e)
+                try:
+                    prs.Close()
+                except Exception:
+                    pass
+                powerpoint.Quit()
+                t -= 1
+        raise pptxOpError.PictureCouldNotBeChangedError(
+            self.file_path, slide_num, old_image_bytes, new_image_bytes, error
+        )

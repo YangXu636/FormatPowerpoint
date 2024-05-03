@@ -335,6 +335,8 @@ class WinGUI(tk.Tk):
 
     def startForm(self):
         self.log(f"模板ppt路径: {mbPPT_Path.get()}")
+        self.log(f"需格式化ppt路径: {needPPT_Path.get()}")
+        self.log(f"需格式化ppt范围: {start_index.get()}~{finish_index.get()}")
         if mbPPT_Path.get() == "":
             self.log("模板ppt路径不能为空。", lvl="Error")
             return
@@ -365,22 +367,36 @@ class WinGUI(tk.Tk):
         self.log("复制PPT成功。")
         self.log("开始格式化PPT...")
         self.log(f"需格式化ppt范围: {start_index.get()}~{finish_index.get()}")
-        try:
-            main_control.format_powerpoint(
-                localPath + "\\sourceFile\\",
-                localPath + "\\resultFile\\",
-                mbName,
-                nfName,
-                targetName,
-                int(start_index.get()),
-                int(finish_index.get()),
-                self.log,
-                self.success_log,
-                self.fail_log,
-            )
-        except Exception as e:
-            self.log(f"格式化失败, 原因: {e}", lvl="Error")
-            return
+        # try:
+        #     main_control.format_powerpoint(
+        #         self,
+        #         localPath + "\\sourceFile\\",
+        #         localPath + "\\resultFile\\",
+        #         mbName,
+        #         nfName,
+        #         targetName,
+        #         int(start_index.get()),
+        #         int(finish_index.get()),
+        #         self.log,
+        #         self.success_log,
+        #         self.fail_log,
+        #     )
+        # except Exception as e:
+        #     self.log(f"格式化失败, 原因: {e}", lvl="Error")
+        #     return
+        main_control.format_powerpoint(
+            self,
+            localPath + "\\sourceFile\\",
+            localPath + "\\resultFile\\",
+            mbName,
+            nfName,
+            targetName,
+            int(start_index.get()),
+            int(finish_index.get()),
+            self.log,
+            self.success_log,
+            self.fail_log,
+        )
         return
 
     def save_log(self):
@@ -424,6 +440,7 @@ class WinGUI(tk.Tk):
             else "WarningLog",
         )
         self.tk_text_log_text.config(state=tk.DISABLED)
+        self.tk_text_log_text.see(tk.END)
         return
 
     def success_log(self, msg):

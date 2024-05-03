@@ -1,63 +1,62 @@
 import tkinter as tk
-import tkinter.ttk as ttk
+from PIL import Image, ImageTk
+
+chooseText = ""
+texts = ""
+image = None
 
 
-class WinGUI(tk.Tk):
+def getType(**kwargs):
+    """
+    选择框
+
+    Parameters:
+        text(str): 文本内容
+        image(_io.BytesIO): 图片blob数据
+
+    Returns:
+        str: 选择的文本内容
+    """
+    global texts, image
+    texts = kwargs.get("text", "")
+    image = kwargs.get("image", None)
+    root = kwargs.get("root", None)
+    if not root:
+        raise ValueError("root参数不能为空")
+    if image:
+        image = Image.open(image)
+        image = image.resize((600, 300))
+        image = ImageTk.PhotoImage(image)
+    chooseUi = WinGUI()
+    root.wait_window(chooseUi)
+    global chooseText
+    return chooseText if chooseText else None
+
+
+class WinGUI(tk.Toplevel):
     def __init__(self):
         super().__init__()
         self.__win()
-        self.tk_label_choose_label = self.__tk_label_choose_label(self)
-        self.tk_select_box_choose_type_selectbox = (
-            self.__tk_select_box_choose_type_selectbox(self)
+        self.tk_text_word = self.__tk_text_word(self)
+        self.tk_button_chooseTitle = self.__tk_button_chooseTitle(self)
+        self.tk_button_chooseChapter = self.__tk_button_chooseChapter(self)
+        self.tk_button_chooseCatalogue = self.__tk_button_chooseCatalogue(self)
+        self.tk_button_chooseParagraph = self.__tk_button_chooseParagraph(self)
+        self.tk_button_chooseExplain = self.__tk_button_chooseExplain(self)
+        self.tk_button_chooseImage = self.__tk_button_chooseImage(self)
+        self.tk_button_chooseNoneed = self.__tk_button_chooseNoneed(self)
+        self.tk_button_chooseOnlyParagraph = self.__tk_button_chooseOnlyParagraph(self)
+        self.tk_button_chooseOnlyImage = self.__tk_button_chooseOnlyImage(self)
+        self.tk_button_chooseImageneirong = self.__tk_button_chooseImageneirong(self)
+        self.tk_button_chooseImageAndParagraph = (
+            self.__tk_button_chooseImageAndParagraph(self)
         )
-        self.tk_label_page_label = self.__tk_label_page_label(self)
-        self.tk_radio_button_have_image_radiobutton = (
-            self.__tk_radio_button_have_image_radiobutton(self)
+        self.tk_button_chooseImageAndExplain = self.__tk_button_chooseImageAndExplain(
+            self
         )
-        self.tk_frame_tails_frame = self.__tk_frame_tails_frame(self)
-        self.tk_select_box_settypes_one_selectbox = (
-            self.__tk_select_box_settypes_one_selectbox(self.tk_frame_tails_frame)
-        )
-        self.tk_text_settypes_one_text = self.__tk_text_settypes_one_text(
-            self.tk_frame_tails_frame
-        )
-        self.tk_select_box_settypes_two_selectbox = (
-            self.__tk_select_box_settypes_two_selectbox(self.tk_frame_tails_frame)
-        )
-        self.tk_text_settypes_two_text = self.__tk_text_settypes_two_text(
-            self.tk_frame_tails_frame
-        )
-        self.tk_select_box_settypes_three_selectbox = (
-            self.__tk_select_box_settypes_three_selectbox(self.tk_frame_tails_frame)
-        )
-        self.tk_text_settypes_three_text = self.__tk_text_settypes_three_text(
-            self.tk_frame_tails_frame
-        )
-        self.tk_select_box_settypes_four_selectbox = (
-            self.__tk_select_box_settypes_four_selectbox(self.tk_frame_tails_frame)
-        )
-        self.tk_text_settypes_four_text = self.__tk_text_settypes_four_text(
-            self.tk_frame_tails_frame
-        )
-        self.tk_select_box_settypes_five_selectbox = (
-            self.__tk_select_box_settypes_five_selectbox(self.tk_frame_tails_frame)
-        )
-        self.tk_text_settypes_five_text = self.__tk_text_settypes_five_text(
-            self.tk_frame_tails_frame
-        )
-        self.tk_select_box_settypes_six_selectbox = (
-            self.__tk_select_box_settypes_six_selectbox(self.tk_frame_tails_frame)
-        )
-        self.tk_text_settypes_six_text = self.__tk_text_settypes_six_text(
-            self.tk_frame_tails_frame
-        )
-        self.tk_select_box_settypes_seven_selectbox = (
-            self.__tk_select_box_settypes_seven_selectbox(self.tk_frame_tails_frame)
-        )
-        self.tk_text_settypes_seven_text = self.__tk_text_settypes_seven_text(
-            self.tk_frame_tails_frame
-        )
-        self.tk_button_return = self.__tk_button_return(self)
+        global image
+        if image:
+            self.tk_text_word.image_create("1.0", image=image)
 
     def __win(self):
         self.title("选择")
@@ -73,7 +72,6 @@ class WinGUI(tk.Tk):
             (screenheight - height) / 2,
         )
         self.geometry(geometry)
-
         self.minsize(width=width, height=height)
 
     def scrollbar_autohide(self, vbar, hbar, widget):
@@ -123,170 +121,138 @@ class WinGUI(tk.Tk):
             self.h_scrollbar(hbar, widget, x, y, w, h, pw, ph)
         self.scrollbar_autohide(vbar, hbar, widget)
 
-    def __tk_label_choose_label(self, parent):
-        label = tk.Label(
-            parent,
-            text="选择类别",
-            anchor="center",
-        )
-        label.place(relx=0.3333, rely=0.0000, relwidth=0.0833, relheight=0.0750)
-        return label
+    def return_choose(self, text):
+        global chooseText
+        chooseText = text
+        self.destroy()
 
-    def __tk_select_box_choose_type_selectbox(self, parent):
-        cb = ttk.Combobox(
-            parent,
-            state="readonly",
-        )
-        cb["values"] = (
-            "标题",
-            "章节",
-            "目录",
-            "仅图片",
-            "仅段落",
-            "图片+段落",
-            "图片+解释",
-            "图片+段落+解释",
-            "无用",
-        )
-        cb.place(relx=0.4167, rely=0.0000, relwidth=0.5000, relheight=0.0750)
-        return cb
-
-    def __tk_label_page_label(self, parent):
-        label = tk.Label(
-            parent,
-            text="ppt中第张",
-            anchor="center",
-        )
-        label.place(relx=0.0000, rely=0.0000, relwidth=0.1667, relheight=0.0750)
-        return label
-
-    def __tk_radio_button_have_image_radiobutton(self, parent):
-        rb = tk.Radiobutton(
-            parent,
-            text="是否有图片",
-        )
-        rb.place(relx=0.1667, rely=0.0000, relwidth=0.1667, relheight=0.0750)
-        return rb
-
-    def __tk_frame_tails_frame(self, parent):
-        frame = tk.Frame(
-            parent,
-        )
-        frame.place(relx=0.0000, rely=0.0775, relwidth=0.9967, relheight=0.8975)
-        return frame
-
-    def __tk_select_box_settypes_one_selectbox(self, parent):
-        cb = ttk.Combobox(
-            parent,
-            state="readonly",
-        )
-        cb["values"] = ("标题", "章节", "目录", "段落", "图片注释", "图片", "无用")
-        cb.place(relx=0.8361, rely=0.0000, relwidth=0.1639, relheight=0.1393)
-        return cb
-
-    def __tk_text_settypes_one_text(self, parent):
+    def __tk_text_word(self, parent):
+        global texts
         text = tk.Text(parent)
-        text.place(relx=0.0000, rely=0.0000, relwidth=0.8361, relheight=0.1393)
-        self.create_bar(parent, text, True, False, 0, 0, 500, 50, 598, 359)
+        text.insert(tk.INSERT, texts)
+        text.config(state=tk.DISABLED)
+        text.place(relx=0.0000, rely=0.0000, relwidth=1.0000, relheight=0.7500)
+        self.create_bar(parent, text, True, True, 0, 0, 600, 300, 600, 400)
         return text
 
-    def __tk_select_box_settypes_two_selectbox(self, parent):
-        cb = ttk.Combobox(
+    def __tk_button_chooseTitle(self, parent):
+        btn = tk.Button(
             parent,
-            state="readonly",
-        )
-        cb["values"] = ("标题", "章节", "目录", "段落", "图片注释", "图片", "无用")
-        cb.place(relx=0.8361, rely=0.1393, relwidth=0.1639, relheight=0.1393)
-        return cb
-
-    def __tk_text_settypes_two_text(self, parent):
-        text = tk.Text(parent)
-        text.place(relx=0.0000, rely=0.1393, relwidth=0.8361, relheight=0.1393)
-        self.create_bar(parent, text, True, False, 0, 50, 500, 50, 598, 359)
-        return text
-
-    def __tk_select_box_settypes_three_selectbox(self, parent):
-        cb = ttk.Combobox(
-            parent,
-            state="readonly",
-        )
-        cb["values"] = ("标题", "章节", "目录", "段落", "图片注释", "图片", "无用")
-        cb.place(relx=0.8361, rely=0.2786, relwidth=0.1639, relheight=0.1393)
-        return cb
-
-    def __tk_text_settypes_three_text(self, parent):
-        text = tk.Text(parent)
-        text.place(relx=0.0000, rely=0.2786, relwidth=0.8361, relheight=0.1393)
-        self.create_bar(parent, text, True, False, 0, 100, 500, 50, 598, 359)
-        return text
-
-    def __tk_select_box_settypes_four_selectbox(self, parent):
-        cb = ttk.Combobox(
-            parent,
-            state="readonly",
-        )
-        cb["values"] = ("标题", "章节", "目录", "段落", "图片注释", "图片", "无用")
-        cb.place(relx=0.8361, rely=0.4178, relwidth=0.1639, relheight=0.1393)
-        return cb
-
-    def __tk_text_settypes_four_text(self, parent):
-        text = tk.Text(parent)
-        text.place(relx=0.0000, rely=0.4178, relwidth=0.8361, relheight=0.1393)
-        self.create_bar(parent, text, True, False, 0, 150, 500, 50, 598, 359)
-        return text
-
-    def __tk_select_box_settypes_five_selectbox(self, parent):
-        cb = ttk.Combobox(
-            parent,
-            state="readonly",
-        )
-        cb["values"] = ("标题", "章节", "目录", "段落", "图片注释", "图片", "无用")
-        cb.place(relx=0.8361, rely=0.5571, relwidth=0.1639, relheight=0.1393)
-        return cb
-
-    def __tk_text_settypes_five_text(self, parent):
-        text = tk.Text(parent)
-        text.place(relx=0.0000, rely=0.5571, relwidth=0.8361, relheight=0.1393)
-        self.create_bar(parent, text, True, False, 0, 200, 500, 50, 598, 359)
-        return text
-
-    def __tk_select_box_settypes_six_selectbox(self, parent):
-        cb = ttk.Combobox(
-            parent,
-            state="readonly",
-        )
-        cb["values"] = ("标题", "章节", "目录", "段落", "图片注释", "图片", "无用")
-        cb.place(relx=0.8361, rely=0.6964, relwidth=0.1639, relheight=0.1393)
-        return cb
-
-    def __tk_text_settypes_six_text(self, parent):
-        text = tk.Text(parent)
-        text.place(relx=0.0000, rely=0.6964, relwidth=0.8361, relheight=0.1393)
-        self.create_bar(parent, text, True, False, 0, 250, 500, 50, 598, 359)
-        return text
-
-    def __tk_select_box_settypes_seven_selectbox(self, parent):
-        cb = ttk.Combobox(
-            parent,
-            state="readonly",
-        )
-        cb["values"] = ("标题", "章节", "目录", "段落", "图片注释", "图片", "无用")
-        cb.place(relx=0.8361, rely=0.8357, relwidth=0.1639, relheight=0.1393)
-        return cb
-
-    def __tk_text_settypes_seven_text(self, parent):
-        text = tk.Text(parent)
-        text.place(relx=0.0000, rely=0.8357, relwidth=0.8361, relheight=0.1393)
-        self.create_bar(parent, text, True, False, 0, 300, 500, 50, 598, 359)
-        return text
-
-    def __tk_button_return(self, parent):
-        btn = ttk.Button(
-            parent,
-            text="确定",
+            text="标题",
             takefocus=False,
+            command=lambda: self.return_choose("标题"),
         )
-        btn.place(relx=0.9133, rely=0.0000, relwidth=0.0833, relheight=0.0750)
+        btn.place(relx=0.0000, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseChapter(self, parent):
+        btn = tk.Button(
+            parent,
+            text="章节",
+            takefocus=False,
+            command=lambda: self.return_choose("章节"),
+        )
+        btn.place(relx=0.0833, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseCatalogue(self, parent):
+        btn = tk.Button(
+            parent,
+            text="目录",
+            takefocus=False,
+            command=lambda: self.return_choose("目录"),
+        )
+        btn.place(relx=0.1667, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseParagraph(self, parent):
+        btn = tk.Button(
+            parent,
+            text="段落",
+            takefocus=False,
+            command=lambda: self.return_choose("段落"),
+        )
+        btn.place(relx=0.2500, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseExplain(self, parent):
+        btn = tk.Button(
+            parent,
+            text="图片注释",
+            takefocus=False,
+            command=lambda: self.return_choose("图片注释"),
+        )
+        btn.place(relx=0.3333, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseImage(self, parent):
+        btn = tk.Button(
+            parent,
+            text="图片",
+            takefocus=False,
+            command=lambda: self.return_choose("图片"),
+        )
+        btn.place(relx=0.4167, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseNoneed(self, parent):
+        btn = tk.Button(
+            parent,
+            text="无用",
+            takefocus=False,
+            command=lambda: self.return_choose("无用"),
+        )
+        btn.place(relx=0.9167, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseOnlyParagraph(self, parent):
+        btn = tk.Button(
+            parent,
+            text="仅段落",
+            takefocus=False,
+            command=lambda: self.return_choose("仅段落"),
+        )
+        btn.place(relx=0.5833, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseOnlyImage(self, parent):
+        btn = tk.Button(
+            parent,
+            text="仅图片",
+            takefocus=False,
+            command=lambda: self.return_choose("仅图片"),
+        )
+        btn.place(relx=0.6667, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseImageneirong(self, parent):
+        btn = tk.Button(
+            parent,
+            text="图片角标",
+            takefocus=False,
+            command=lambda: self.return_choose("图角标"),
+        )
+        btn.place(relx=0.5000, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseImageAndParagraph(self, parent):
+        btn = tk.Button(
+            parent,
+            text="图+段",
+            takefocus=False,
+            command=lambda: self.return_choose("图+段"),
+        )
+        btn.place(relx=0.7467, rely=0.7500, relwidth=0.0833, relheight=0.2500)
+        return btn
+
+    def __tk_button_chooseImageAndExplain(self, parent):
+        btn = tk.Button(
+            parent,
+            text="图+释",
+            takefocus=False,
+            command=lambda: self.return_choose("图+释"),
+        )
+        btn.place(relx=0.8333, rely=0.7500, relwidth=0.0833, relheight=0.2500)
         return btn
 
 

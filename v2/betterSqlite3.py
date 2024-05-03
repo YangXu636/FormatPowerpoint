@@ -1,5 +1,5 @@
 import sqlite3
-from typing import Literal
+from typing import Literal, overload
 
 
 class BetterSqlite3:
@@ -73,6 +73,31 @@ class BetterSqlite3:
         )
         self.conn.commit()
         return None
+
+    @overload
+    def dataSelect(self, table_name: str, where: str, columns: list[str] = ["*"]):
+        """
+        Select data from a table. Only return records that meet specific criteria.
+
+        Parameters:
+            table_name (str): The name of the table to select data from.
+            where (str): A SQL condition to specify which rows to select.
+            columns (list): A list of column names to select. Defaults to ["*"].
+
+        Returns:
+            A list of dictionaries containing the selected data.
+
+        Example:
+            >>> db = BetterSqlite3("mydatabase.db")
+            >>> db.tableAdd("people", {"id": "INTEGER", "name": "TEXT", "age": "INTEGER"})
+            >>> db.dataInsert("people", {"id": 1, "name": "John", "age": 30})
+            >>> db.dataInsert("people", {"id": 2, "name": "Jane", "age": 25})
+            >>> db.dataSelect("people", "id == 2", ["id", "name"])
+            [{"id": 2, "name": "Jane"}]
+        """
+        columns_str = ", ".join(columns)
+        self.cursor.execute(f"SELECT {columns_str} FROM {table_name} WHERE {where}")
+        return self.cursor.fetchall()
 
     def dataSelect(self, table_name: str, columns: list[str] = ["*"]) -> list[dict]:
         """
