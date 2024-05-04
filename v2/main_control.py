@@ -105,7 +105,7 @@ def format_powerpoint(
         mbDb = bs3(os.path.join(pathSrc, mbName + ".db"))
         # 模板文件分类
         mbDb.tableAdd("SlideType", {"Num": "INTEGER", "Type": "TEXT"})
-        for i in range(1, mbPptCount):
+        for i in range(1, mbPptCount + 1):
             # 分类整体页面
             slideBytes = mbPpt.slide2Bytes(i, "png")
             slidePng = Image.open(slideBytes)
@@ -148,7 +148,7 @@ def format_powerpoint(
     nfPptCount = nfPpt.slidesCount()
     nfPptCountLen = len(str(nfPptCount))
     targetPpt.fileNew()
-    for i in range(max(1, startIndex), min(nfPptCount + 1, endIndex)):
+    for i in range(max(1, startIndex), min(nfPptCount + 1, endIndex + 1)):
         logConsole(f"正在处理第{i}页...")
         print(f"正在处理第{i}页...")
         nfDb.tableAdd(
@@ -172,8 +172,10 @@ def format_powerpoint(
         # 分类整体内容
         slideType = choose_ui.getType(image=nfPpt.slide2Bytes(i, "png"), root=root)
         nfDb.dataInsert("SlideType", {"Num": i, "Type": slideType})
-        mbNum = mbDb.dataSelect("SlideType", f"Type == {slideType}", ["Num"])[0][
-            "Num"
+        if slideType == "无用":
+            continue
+        mbNum = mbDb.dataSelect("SlideType", f'Type == "{slideType}"', ["Num"])[0][
+            0
         ]  # 获取模板页码
         targetPpt.slideCopy(
             mbPpt.file_path, mbNum, targetPpt.slidesCount() + 1
@@ -186,7 +188,7 @@ def format_powerpoint(
             )
         for j in set(
             [
-                k[0]["Type"]
+                k[0]
                 for k in nfDb.dataSelect(
                     f"Slide{f'%0{nfPptCountLen}d' % i}", "Images IS NULL", ["Type"]
                 )
@@ -195,18 +197,18 @@ def format_powerpoint(
             if j == "无用":
                 continue
             texts = [
-                k[0]["Texts"]
+                k[0]
                 for k in nfDb.dataSelect(
-                    f"Slide{f'%0{nfPptCountLen}d' % i}", f"Type == {j}", ["Texts"]
+                    f"Slide{f'%0{nfPptCountLen}d' % i}", f'Type == "{j}"', ["Texts"]
                 )
             ]  # 获取所有文本
             print(f"Type = {j}    {texts = }")
             targetPpt.textChange(
                 targetPpt.slidesCount(),
                 mbDb.dataSelect(
-                    f"Slide{f'%0{mbPptCountLen}d' % mbNum}", f"Type == {j}", ["Texts"]
-                )[0]["Texts"],
-                "\n".join(texts),
+                    f"Slide{f'%0{mbPptCountLen}d' % mbNum}", f'Type == "{j}"', ["Texts"]
+                )[0][0],
+                "".join(texts),
             )  # 改变文本
         for j in slideImages:
             Type = choose_ui.getType(image=io.BytesIO(j), root=root)
@@ -216,7 +218,7 @@ def format_powerpoint(
             )
         for j in set(
             [
-                k[0]["Type"]
+                k[0]
                 for k in nfDb.dataSelect(
                     f"Slide{f'%0{nfPptCountLen}d' % i}", "Texts IS NULL", ["Type"]
                 )
@@ -225,20 +227,18 @@ def format_powerpoint(
             if j == "无用":
                 continue
             images = [
-                k[0]["Images"]
+                k[0]
                 for k in nfDb.dataSelect(
-                    f"Slide{f'%0{nfPptCountLen}d' % i}", f"Type == {j}", ["Images"]
+                    f"Slide{f'%0{nfPptCountLen}d' % i}", f'Type == "{j}"', ["Images"]
                 )
             ][0]  # 仅取第一个图片
             targetPpt.pictureChange(
                 targetPpt.slidesCount(),
-                io.BytesIO(
-                    mbDb.dataSelect(
-                        f"Slide{f'%0{mbPptCountLen}d' % mbNum}",
-                        f"Type == {j}",
-                        ["Images"],
-                    )[0]["Images"][0]
-                ),
+                mbDb.dataSelect(
+                    f"Slide{f'%0{mbPptCountLen}d' % mbNum}",
+                    f'Type == "{j}"',
+                    ["Images"],
+                )[0][0],
                 io.BytesIO(images),
             )
         del slidePng

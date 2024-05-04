@@ -8,6 +8,7 @@ import os
 from typing import Literal
 import io
 from PIL import Image
+from betterTime import BetterTime as btime
 
 
 class pptxOp:
@@ -132,8 +133,6 @@ class pptxOp:
         t = self.t
         if not os.path.exists(from_file_path):
             raise pptxOpError.FileNotFoundError(from_file_path)
-        if not os.path.exists(self.file_path):
-            pptxOp.fileNew(self.file_path)
         if new_slide_num == -1:
             new_slide_num = len(self.file_path) + 1
         while t > 0:
@@ -145,7 +144,7 @@ class pptxOp:
                 from_prs.Slides(slide_num).Copy()
                 from_prs.Close()
                 to_prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
-                to_prs.Slides().Paste(new_slide_num)
+                to_prs.Slides.Paste(new_slide_num)
                 to_prs.Save()
                 to_prs.Close()
                 return
@@ -245,7 +244,6 @@ class pptxOp:
                 for i in prs.Slides(slide_num).Shapes:
                     if i.Type == MSO_SHAPE_TYPE.GROUP:
                         i.Ungroup()
-                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
                 text = [
                     shape.TextFrame.TextRange.Text
                     for shape in prs.Slides(slide_num).Shapes
@@ -529,7 +527,7 @@ class pptxOp:
         Parameters:
             slide_num (int): The number of the slide to change.
             old_image_bytes (blob): The bytes object of the old image.
-            new_image_bytes (_io.BytesIO): The bytes object of the new image.
+            new_image_bytes (blob): The bytes object of the new image.
 
         Returns:
             None
@@ -541,26 +539,21 @@ class pptxOp:
                 prs_size = (Emu(prs.slide_width).pt, Emu(prs.slide_height).pt)
                 del prs
                 flag = False
-                old_image_size = []
                 powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
                 prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
                 for i in prs.Slides(slide_num).Shapes:
                     if i.Type == MSO_SHAPE_TYPE.GROUP:
                         i.Ungroup()
-                for shape in prs.Slides(slide_num).Shapes:
-                    if shape.Type == MSO_SHAPE_TYPE.PICTURE:
-                        if (
-                            io.BytesIO(shape.PictureFormat.Picture.Image.blob)
-                            == old_image_bytes
-                        ):
+                prs.Save()
+                prs.Close()
+                powerpoint.Quit()
+                prs = pptx.Presentation(self.file_path)
+                for i in range(len(prs.slides[slide_num - 1].shapes)):
+                    shape = prs.slides[slide_num - 1].shapes[i]
+                    if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                        if shape.image.blob == old_image_bytes:
                             flag = True
-                            old_image_size = [
-                                shape.Width,
-                                shape.Height,
-                                shape.Left,
-                                shape.Top,
-                            ]
-                            shape.Delete()
+                            old_image_size = i + 1
                 if not flag:
                     raise pptxOpError.PictureCouldNotBeChangedError(
                         self.file_path,
@@ -569,10 +562,24 @@ class pptxOp:
                         new_image_bytes,
                         "Picture not found",
                     )
+                del prs
+                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
                 slide = prs.Slides(slide_num)
-                if isinstance(new_image_bytes, bytes):
-                    new_image = Image.open(io.BytesIO(new_image_bytes))
-                    new_image_bytes = os.getenv("TEMP") + "\\new_image.png"
+                shape = slide.Shapes(old_image_size)
+                old_image_size = [
+                    shape.Width,
+                    shape.Height,
+                    shape.Left,
+                    shape.Top,
+                ]
+                shape.Delete()
+                if not isinstance(new_image_bytes, str):
+                    new_image = new_image_bytes
+                    new_image = Image.open(new_image)
+                    new_image_bytes = (
+                        os.getenv("TEMP") + f"\\new_image_{btime.timeName()}.png"
+                    )
                     new_image.save(new_image_bytes)
                     new_image.close()
                 new_image = Image.open(new_image_bytes)
@@ -589,14 +596,14 @@ class pptxOp:
                     )
                 slide.Shapes.AddPicture(
                     new_image_bytes,
-                    prs_size[0] / 2.0000,
+                    True,
+                    True,
+                    (prs_size[0] - new_image_size[0]) / 2.0000,
                     old_image_size[3]
-                    + old_image_size[1] / 2.0000
-                    - new_image_size[1] / 2.0000,
+                    + (old_image_size[1] - new_image_size[1]) / 2.0000,
                     new_image_size[0],
                     new_image_size[1],
                 )
-                os.remove(new_image_bytes)
                 prs.Save()
                 prs.Close()
                 powerpoint.Quit()
@@ -607,8 +614,14 @@ class pptxOp:
                 try:
                     prs.Close()
                 except Exception:
+                    try:
+                        del prs
+                    except Exception:
+                        pass
+                try:
+                    powerpoint.Quit()
+                except Exception:
                     pass
-                powerpoint.Quit()
                 t -= 1
         raise pptxOpError.PictureCouldNotBeChangedError(
             self.file_path, slide_num, old_image_bytes, new_image_bytes, error
