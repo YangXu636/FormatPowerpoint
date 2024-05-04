@@ -7,3 +7,4 @@ sourceFile/
 build/
 dist/
 toExe/
+*.db
