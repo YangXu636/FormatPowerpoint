@@ -149,105 +149,115 @@ def format_powerpoint(
     nfPptCountLen = len(str(nfPptCount))
     targetPpt.fileNew()
     for i in range(max(1, startIndex), min(nfPptCount + 1, endIndex + 1)):
-        logConsole(f"正在处理第{i}页...")
-        print(f"正在处理第{i}页...")
-        nfDb.tableAdd(
-            f"Slide{f'%0{nfPptCountLen}d' % i}",
-            {"Texts": "TEXT", "Images": "BLOB", "Type": "TEXT"},
-        )
-        # 获取所有文本和图片
-        slideTexts = nfPpt.slideTexts(i)
-        slideImages = nfPpt.slidePictures(i)
-        print(f"{len(slideTexts) = } {slideTexts = } {len(slideImages) = }")
-        nfPpt.slide2Image(
-            i, imagePath + f"\\{nfName}", f"Slide{f'%0{nfPptCountLen}d' % i}", "png"
-        )
-        # 显示整体图片
-        slidePng = Image.open(
-            os.path.join(
-                imagePath + f"\\{nfName}", f"Slide{f'%0{nfPptCountLen}d' % i}.png"
+        try:
+            logConsole(f"正在处理第{i}页...")
+            print(f"正在处理第{i}页...")
+            nfDb.tableAdd(
+                f"Slide{f'%0{nfPptCountLen}d' % i}",
+                {"Texts": "TEXT", "Images": "BLOB", "Type": "TEXT"},
             )
-        )
-        slidePng.show()
-        # 分类整体内容
-        slideType = choose_ui.getType(image=nfPpt.slide2Bytes(i, "png"), root=root)
-        nfDb.dataInsert("SlideType", {"Num": i, "Type": slideType})
-        if slideType == "无用":
+            # 获取所有文本和图片
+            slideTexts = nfPpt.slideTexts(i)
+            slideImages = nfPpt.slidePictures(i)
+            print(f"{len(slideTexts) = } {slideTexts = } {len(slideImages) = }")
+            nfPpt.slide2Image(
+                i, imagePath + f"\\{nfName}", f"Slide{f'%0{nfPptCountLen}d' % i}", "png"
+            )
+            # 显示整体图片
+            slidePng = Image.open(
+                os.path.join(
+                    imagePath + f"\\{nfName}", f"Slide{f'%0{nfPptCountLen}d' % i}.png"
+                )
+            )
+            slidePng.show()
+            # 分类整体内容
+            slideType = choose_ui.getType(image=nfPpt.slide2Bytes(i, "png"), root=root)
+            nfDb.dataInsert("SlideType", {"Num": i, "Type": slideType})
+            if slideType == "无用":
+                continue
+            mbNum = mbDb.dataSelect("SlideType", f'Type == "{slideType}"', ["Num"])[0][
+                0
+            ]  # 获取模板页码
+            targetPpt.slideCopy(
+                mbPpt.file_path, mbNum, targetPpt.slidesCount() + 1
+            )  # 复制模板页
+            for j in slideTexts:
+                Type = choose_ui.getType(text=j, root=root)
+                nfDb.dataInsert(
+                    f"Slide{f'%0{nfPptCountLen}d' % i}",
+                    {"Texts": j, "Images": None, "Type": Type},
+                )
+            for j in set(
+                [
+                    k[0]
+                    for k in nfDb.dataSelect(
+                        f"Slide{f'%0{nfPptCountLen}d' % i}", "Images IS NULL", ["Type"]
+                    )
+                ]
+            ):  # 遍历所有类型
+                if j == "无用":
+                    continue
+                texts = [
+                    k[0]
+                    for k in nfDb.dataSelect(
+                        f"Slide{f'%0{nfPptCountLen}d' % i}", f'Type == "{j}"', ["Texts"]
+                    )
+                ]  # 获取所有文本
+                print(f"Type = {j}    {texts = }")
+                targetPpt.textChange(
+                    targetPpt.slidesCount(),
+                    mbDb.dataSelect(
+                        f"Slide{f'%0{mbPptCountLen}d' % mbNum}",
+                        f'Type == "{j}"',
+                        ["Texts"],
+                    )[0][0],
+                    "\n".join(texts),
+                )  # 改变文本
+            for j in slideImages:
+                Type = choose_ui.getType(image=io.BytesIO(j), root=root)
+                nfDb.dataInsert(
+                    f"Slide{f'%0{nfPptCountLen}d' % i}",
+                    {"Texts": None, "Images": j, "Type": Type},
+                )
+            for j in set(
+                [
+                    k[0]
+                    for k in nfDb.dataSelect(
+                        f"Slide{f'%0{nfPptCountLen}d' % i}", "Texts IS NULL", ["Type"]
+                    )
+                ]
+            ):  # 遍历所有类型
+                if j == "无用":
+                    continue
+                images = [
+                    k[0]
+                    for k in nfDb.dataSelect(
+                        f"Slide{f'%0{nfPptCountLen}d' % i}",
+                        f'Type == "{j}"',
+                        ["Images"],
+                    )
+                ][0]  # 仅取第一个图片
+                targetPpt.pictureChange(
+                    targetPpt.slidesCount(),
+                    mbDb.dataSelect(
+                        f"Slide{f'%0{mbPptCountLen}d' % mbNum}",
+                        f'Type == "{j}"',
+                        ["Images"],
+                    )[0][0],
+                    io.BytesIO(images),
+                )
+            del slidePng
+            logSucceed(f"{i = }")
+        except Exception as e:
+            logFailed(f"{i = }")
+            logConsole(f"格式化第{i}页失败！    {e = }", lvl="Error")
+            print(f"格式化第{i}页失败！    {e}")
             continue
-        mbNum = mbDb.dataSelect("SlideType", f'Type == "{slideType}"', ["Num"])[0][
-            0
-        ]  # 获取模板页码
-        targetPpt.slideCopy(
-            mbPpt.file_path, mbNum, targetPpt.slidesCount() + 1
-        )  # 复制模板页
-        for j in slideTexts:
-            Type = choose_ui.getType(text=j, root=root)
-            nfDb.dataInsert(
-                f"Slide{f'%0{nfPptCountLen}d' % i}",
-                {"Texts": j, "Images": None, "Type": Type},
-            )
-        for j in set(
-            [
-                k[0]
-                for k in nfDb.dataSelect(
-                    f"Slide{f'%0{nfPptCountLen}d' % i}", "Images IS NULL", ["Type"]
-                )
-            ]
-        ):  # 遍历所有类型
-            if j == "无用":
-                continue
-            texts = [
-                k[0]
-                for k in nfDb.dataSelect(
-                    f"Slide{f'%0{nfPptCountLen}d' % i}", f'Type == "{j}"', ["Texts"]
-                )
-            ]  # 获取所有文本
-            print(f"Type = {j}    {texts = }")
-            targetPpt.textChange(
-                targetPpt.slidesCount(),
-                mbDb.dataSelect(
-                    f"Slide{f'%0{mbPptCountLen}d' % mbNum}", f'Type == "{j}"', ["Texts"]
-                )[0][0],
-                "".join(texts),
-            )  # 改变文本
-        for j in slideImages:
-            Type = choose_ui.getType(image=io.BytesIO(j), root=root)
-            nfDb.dataInsert(
-                f"Slide{f'%0{nfPptCountLen}d' % i}",
-                {"Texts": None, "Images": j, "Type": Type},
-            )
-        for j in set(
-            [
-                k[0]
-                for k in nfDb.dataSelect(
-                    f"Slide{f'%0{nfPptCountLen}d' % i}", "Texts IS NULL", ["Type"]
-                )
-            ]
-        ):  # 遍历所有类型
-            if j == "无用":
-                continue
-            images = [
-                k[0]
-                for k in nfDb.dataSelect(
-                    f"Slide{f'%0{nfPptCountLen}d' % i}", f'Type == "{j}"', ["Images"]
-                )
-            ][0]  # 仅取第一个图片
-            targetPpt.pictureChange(
-                targetPpt.slidesCount(),
-                mbDb.dataSelect(
-                    f"Slide{f'%0{mbPptCountLen}d' % mbNum}",
-                    f'Type == "{j}"',
-                    ["Images"],
-                )[0][0],
-                io.BytesIO(images),
-            )
-        del slidePng
     nfDb.dbClose()
     del nfDb
     del nfPpt
     del targetPpt
     del mbPpt
     del mbDb
-    logConsole("格式化PowerPoint文件成功！")
-    logSucceed(f"格式化PowerPoint文件成功！\n    {pathRlt = }\n    {targetName = }")
+    logConsole(f"格式化PowerPoint文件成功！\n    {pathRlt = }\n    {targetName = }")
     return
