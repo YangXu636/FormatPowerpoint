@@ -33,15 +33,15 @@ python3 .\v1\main.py
 ```none
 //生成文件夹
 .venv\Scripts\activate
-pyinstaller --distpath .\toExe\dist -D .\v1\main.py
+pyinstaller --distpath .\toExe\dist -D .\v2\main.py
 
 //或生成单个文件
 .venv\Scripts\activate
-pyinstaller --distpath .\toExe\dist -F .\v1\main.py
+pyinstaller --distpath .\toExe\dist -F .\v2\main.py
 
 //带图标
 .venv\Scripts\activate
-pyinstaller --distpath .\toExe\dist -F -i icon.ico .\v1\main.py
+pyinstaller --distpath .\toExe\dist -F -i icon.ico .\v2\main.py
 ```
 
 ## 注意事项
