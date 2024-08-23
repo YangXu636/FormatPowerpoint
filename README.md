@@ -16,14 +16,29 @@ python3 -m venv .venv
 pip install -r requirements.txt
 ```
 
+## 生成依赖库
+
+在`.\FormatPowerpoint`目录下cmd内运行以下命令(请确保python3.11已安装):
+
+```none
+//若已安装，则忽略第一行命令
+
+pip install pipreqs 
+pipreqs ./ --encoding=utf8  --force
+```
+
 ## 运行方式
+
+### 下载exe文件
+
+下载[FormatPowerpoint.exe](https://github.com/YangXu636/FormatPowerpoint/releases/download/2.2.0/FormatPowerpoint.exe)
 
 ### cmd内运行
 
 在`.\FormatPowerpoint`目录下cmd内运行以下命令:
 
 ```none
-python3 .\v1\main.py
+python3 .\v2\main.py
 ```
 
 ### 打包运行
@@ -50,7 +65,7 @@ pyinstaller --distpath .\toExe\dist -F -i icon.ico .\v2\main.py
 2. 运行过程中请勿使用PowerPoint 和 关于剪切板的相关操作。
 3. 程序运行过程中，非特殊情况请勿关闭cmd窗口。
 4. 格式化过程中遇到无法操作PowerPoint文件属于正常情况，这是PowerPoint文件本身性质和win32com库本身不稳定所导致的。出问题时请使用任务管理器关闭程序和PowerPoint进程，并根据第五条进行分布式格式化，最后通过人工合并（如需要程序合并请等待后续版本）
-5. 若格式化过程中遇到死循环，请关闭cmd窗口，重新运行程序，并将开始格式化位置从1改成上一次格式化失败的界面的索引值-10。
+5. 若格式化过程中遇到死循环，请关闭cmd窗口，重新运行程序，并将开始格式化位置从1改成上一次格式化失败的界面的索引值-2。
 6. 程序运行结束后若无法使用PowerPoint或打开文件，请使用任务管理器关闭所有PowerPoint进程，并重试。
-7. 格式化结束后由于识别精度问题，仍需要人工排查错误。
+7. 格式化结束后由于种种问题，仍需要人工排查错误。
 8. 程序特异性较为严重，使用其他模板ppt时目前需要按照特殊格式修改模板ppt。

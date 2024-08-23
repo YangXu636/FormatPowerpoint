@@ -204,15 +204,22 @@ def format_powerpoint(
                     )
                 ]  # 获取所有文本
                 print(f"Type = {j}    {texts = }")
-                targetPpt.textChange(
-                    targetPpt.slidesCount(),
-                    mbDb.dataSelect(
-                        f"Slide{f'%0{mbPptCountLen}d' % mbNum}",
-                        f'Type == "{j}"',
-                        ["Texts"],
-                    )[0][0],
-                    "\n".join(texts),
-                )  # 改变文本
+                try:
+                    targetPpt.textChange(
+                        targetPpt.slidesCount(),
+                        mbDb.dataSelect(
+                            f"Slide{f'%0{mbPptCountLen}d' % mbNum}",
+                            f'Type == "{j}"',
+                            ["Texts"],
+                        )[0][0],
+                        "".join(texts),
+                    )  # 改变文本
+                except Exception as e:
+                    logConsole(f"第{i}页{j}替换失败！    {e = }", lvl="Warning")
+                    print(f"第{i}页{j}替换失败！    {e}")
+            targetPpt.componentDelete(
+                i, list(set(targetPpt.slideTexts(i)) & set(mbPpt.slideTexts(mbNum)))
+            )  # 删除模板页中未改变的多余的文本框
             for j in slideImages:
                 Type = choose_ui.getType(image=io.BytesIO(j), root=root)
                 nfDb.dataInsert(
@@ -237,15 +244,29 @@ def format_powerpoint(
                         ["Images"],
                     )
                 ][0]  # 仅取第一个图片
-                targetPpt.pictureChange(
-                    targetPpt.slidesCount(),
-                    mbDb.dataSelect(
-                        f"Slide{f'%0{mbPptCountLen}d' % mbNum}",
-                        f'Type == "{j}"',
-                        ["Images"],
-                    )[0][0],
-                    io.BytesIO(images),
+                try:
+                    targetPpt.pictureChange(
+                        targetPpt.slidesCount(),
+                        mbDb.dataSelect(
+                            f"Slide{f'%0{mbPptCountLen}d' % mbNum}",
+                            f'Type == "{j}"',
+                            ["Images"],
+                        )[0][0],
+                        io.BytesIO(images),
+                    )
+                except Exception as e:
+                    logConsole(f"第{i}页{j}替换失败！    {e = }", lvl="Warning")
+                    print(f"第{i}页{j}替换失败！    {e}")
+                print(
+                    list(
+                        set(targetPpt.slidePictures(i))
+                        & set(mbPpt.slidePictures(mbNum))
+                    )
                 )
+            targetPpt.componentDelete(
+                i,
+                list(set(targetPpt.slidePictures(i)) & set(mbPpt.slidePictures(mbNum))),
+            )  # 删除模板页中未改变的多余的图片
             del slidePng
             logSucceed(f"{i = }")
         except Exception as e:

@@ -119,3 +119,16 @@ class PictureCouldNotBeChangedError(Exception):
 
     def __str__(self):
         return f'Picture in slide 【{self.slide_num}】 from file "{self.file_path}" could not be changed. Error: {self.error}'
+
+
+class ComponentCouldNotBeDeletedError(Exception):
+    """Raised when a component could not be deleted."""
+
+    def __init__(self, file_path, slide_num, component_name, error):
+        self.file_path = file_path
+        self.slide_num = slide_num
+        self.component_name = component_name
+        self.error = error
+
+    def __str__(self):
+        return f'"{self.component_name}" in slide 【{self.slide_num}】 from file "{self.file_path}" could not be deleted. Error: {self.error}'

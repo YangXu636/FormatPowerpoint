@@ -308,7 +308,12 @@ class WinGUI(tk.Tk):
 
     def selectMbpptPath(self):
         _path = filedialog.askopenfilename(
-            filetypes=[("PowerPoint", ["*.ppt", "*.pptx"])]
+            filetypes=[
+                ("Microsoft PowerPoint 演示文稿", "*.pptx"),
+                ("Microsoft PowerPoint 97-2003 演示文稿", "*.ppt"),
+                ("Microsoft PowerPoint 97-2003 加载项", "*.ppa"),
+                ("All Files", "*.*"),
+            ]
         )
         _path = _path.replace("/", "\\")
         global mbPPT_Path
@@ -317,7 +322,12 @@ class WinGUI(tk.Tk):
 
     def selectNeedpptPath(self):
         _path = filedialog.askopenfilename(
-            filetypes=[("PowerPoint", ["*.ppt", "*.pptx"])]
+            filetypes=[
+                ("Microsoft PowerPoint 演示文稿", "*.pptx"),
+                ("Microsoft PowerPoint 97-2003 演示文稿", "*.ppt"),
+                ("Microsoft PowerPoint 97-2003 加载项", "*.ppa"),
+                ("All Files", "*.*"),
+            ]
         )
         _path = _path.replace("/", "\\")
         global needPPT_Path
@@ -355,10 +365,10 @@ class WinGUI(tk.Tk):
         )
         try:
             mbPpt = pptxOp(mbPPT_Path.get())
-            mbPpt.pptFileConversion("pptx", localPath + "\\sourceFile\\")
+            mbPpt.fileConversion("pptx", localPath + "\\sourceFile\\")
             del mbPpt
             nfPpt = pptxOp(needPPT_Path.get())
-            nfPpt.pptFileConversion("pptx", localPath + "\\sourceFile\\")
+            nfPpt.fileConversion("pptx", localPath + "\\sourceFile\\")
             del nfPpt
             # main_control.ZipExtract(localPath + "\\sourceFile\\" + nfName + ".pptx",localPath + "\\sourceFile\\" + nfName + "\\")
         except Exception as e:

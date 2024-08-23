@@ -63,11 +63,9 @@ class pptxOp:
                 t -= 1
         raise pptxOpError.FileCouldNotBeCreatedError(self.file_path)
 
-    def pptFileConversion(
-        self, new_file_format: str, new_file_path: str = None
-    ) -> None:
+    def fileConversion(self, new_file_format: str, new_file_path: str = None) -> None:
         """
-        pptFileConversion(new_file_format,  [,new_file_path=None])
+        fileConversion(new_file_format,  [,new_file_path=None])
 
         Convert Powerpoint file to new_file_format.
 
@@ -244,6 +242,7 @@ class pptxOp:
                 for i in prs.Slides(slide_num).Shapes:
                     if i.Type == MSO_SHAPE_TYPE.GROUP:
                         i.Ungroup()
+                prs.Save()
                 text = [
                     shape.TextFrame.TextRange.Text
                     for shape in prs.Slides(slide_num).Shapes
@@ -263,9 +262,9 @@ class pptxOp:
                 t -= 1
         raise pptxOpError.SlideCouldNotBeReadError(self.file_path, slide_num, error)
 
-    def slidePictures(self, slide_num: int) -> list:
+    def slidePictures(self, slide_num: int) -> list[bytes]:
         """
-        slidePictures(slide_num) -> list
+        slidePictures(slide_num) -> list[bytes]
 
         Return the blob of the picture in slide_num.
 
@@ -346,9 +345,10 @@ class pptxOp:
                 error = e
                 print(e)
                 try:
-                    del prs
+                    prs.Close()
                 except Exception:
                     pass
+                powerpoint.Quit()
                 t -= 1
         raise pptxOpError.SlideCouldNotBeSavedAsOtherFormatError(
             self.file_path, slide_num, image_format, error
@@ -626,3 +626,189 @@ class pptxOp:
         raise pptxOpError.PictureCouldNotBeChangedError(
             self.file_path, slide_num, old_image_bytes, new_image_bytes, error
         )
+
+    def componentDeleteText(self, slide_num: int, component_content: str) -> None:
+        """
+        componentDelete(slide_num, component_content) -> None
+
+        Delete the component in slide_num.
+
+        Parameters:
+            slide_num (int): The number of the slide to delete.
+            component_content (str): The content of the component to delete.
+
+        Returns:
+            None
+        """
+        t = self.t
+        while t > 0:
+            try:
+                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
+                for i in prs.Slides(slide_num).Shapes:
+                    if i.Type == MSO_SHAPE_TYPE.GROUP:
+                        i.Ungroup()
+                prs.Save()
+                delete_shape = None
+                for shape in prs.Slides(slide_num).Shapes:
+                    if shape.TextFrame.HasText:
+                        if shape.TextFrame.TextRange.Text == component_content:
+                            delete_shape = shape
+                            break
+                if delete_shape is None:
+                    raise pptxOpError.ComponentCouldNotBeDeletedError(
+                        self.file_path,
+                        slide_num,
+                        component_content,
+                        "Component not found",
+                    )
+                try:
+                    delete_shape.Delete()
+                except Exception as e:
+                    raise pptxOpError.ComponentCouldNotBeDeletedError(
+                        self.file_path,
+                        slide_num,
+                        component_content,
+                        f"Component could not be deleted due to error: {e}",
+                    )
+                prs.Save()
+                prs.Close()
+                powerpoint.Quit()
+                return
+            except Exception as e:
+                error = e
+                print(e)
+                try:
+                    prs.Close()
+                except Exception:
+                    try:
+                        del prs
+                    except Exception:
+                        pass
+                try:
+                    powerpoint.Quit()
+                except Exception:
+                    pass
+                t -= 1
+        raise pptxOpError.ComponentCouldNotBeDeletedError(
+            self.file_path, slide_num, component_content, error
+        )
+
+    def componentDeletePicture(self, slide_num: int, component_content: bytes) -> None:
+        """
+        componentDeletePicture(slide_num, component_content) -> None
+
+        Delete the picture in slide_num.
+
+        Parameters:
+            slide_num (int): The number of the slide to delete.
+            component_content (bytes): The bytes object of the picture to delete.
+
+        Returns:
+            None
+        """
+        t = self.t
+        while t > 0:
+            try:
+                powerpoint = win32com.client.DispatchEx("Powerpoint.Application")
+                prs = powerpoint.Presentations.Open(self.file_path, WithWindow=False)
+                for i in prs.Slides(slide_num).Shapes:
+                    if i.Type == MSO_SHAPE_TYPE.GROUP:
+                        i.Ungroup()
+                prs.Save()
+                prs.Save()
+                prs.Close()
+                ppt = pptx.Presentation(self.file_path)
+                delete_shape_num = None
+                for i in range(len(ppt.slides[slide_num - 1].shapes)):
+                    shape = ppt.slides[slide_num - 1].shapes[i]
+                    if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                        if shape.image.blob == component_content:
+                            delete_shape_num = i + 1
+                            break
+                del ppt
+                if delete_shape_num is None:
+                    raise pptxOpError.PictureCouldNotBeDeletedError(
+                        self.file_path,
+                        slide_num,
+                        component_content,
+                        "Picture not found",
+                    )
+                try:
+                    prs = powerpoint.Presentations.Open(
+                        self.file_path, WithWindow=False
+                    )
+                    prs.Slides(slide_num).Shapes(delete_shape_num).Delete()
+                except Exception as e:
+                    raise pptxOpError.ComponentCouldNotBeDeletedError(
+                        self.file_path,
+                        slide_num,
+                        component_content,
+                        f"Picture could not be deleted due to error: {e}",
+                    )
+                prs.Save()
+                prs.Close()
+                powerpoint.Quit()
+                return
+            except Exception as e:
+                error = e
+                print(e)
+                try:
+                    prs.Close()
+                except Exception:
+                    try:
+                        del prs
+                    except Exception:
+                        pass
+                try:
+                    powerpoint.Quit()
+                except Exception:
+                    pass
+                t -= 1
+        raise pptxOpError.ComponentCouldNotBeDeletedError(
+            self.file_path, slide_num, component_content, error
+        )
+
+    def componentDelete(
+        self,
+        slide_num: int,
+        component_content: str | bytes | list | tuple,
+        reportErrors: bool = True,
+    ) -> None:
+        """
+        componentDelete(slide_num, component_content[, reportErrors=True]) -> None
+
+        Delete the component(s) in slide_num.
+
+        Parameters:
+            slide_num (int): The number of the slide to delete.
+            component_content (str | bytes | list): The content(s) of the component to delete.
+            reportErrors (bool): Whether to report errors or not.
+
+        Returns:
+            None
+        """
+        if reportErrors:
+            if isinstance(component_content, str):
+                self.componentDeleteText(slide_num, component_content)
+            elif isinstance(component_content, bytes):
+                self.componentDeletePicture(slide_num, component_content)
+            elif isinstance(component_content, list):
+                for content in component_content:
+                    self.componentDelete(slide_num, content, reportErrors)
+            elif isinstance(component_content, tuple):
+                for content in component_content:
+                    self.componentDelete(slide_num, content, reportErrors)
+            else:
+                raise TypeError("component_content must be str, bytes, list or tuple")
+        else:
+            try:
+                if isinstance(component_content, str):
+                    self.componentDeleteText(slide_num, component_content)
+                elif isinstance(component_content, bytes):
+                    self.componentDeletePicture(slide_num, component_content)
+                elif isinstance(component_content, list):
+                    for content in component_content:
+                        self.componentDelete(slide_num, content, reportErrors)
+            except Exception as e:  # noqa
+                pass
