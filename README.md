@@ -31,7 +31,7 @@ pipreqs ./ --encoding=utf8  --force
 
 ### 下载exe文件
 
-下载[FormatPowerpoint.exe](https://github.com/YangXu636/FormatPowerpoint/releases/download/2.2.0/FormatPowerpoint.exe)
+下载最新版 [FormatPowerpoint.exe](https://github.com/YangXu636/FormatPowerpoint/releases/download/2.2.1/FormatPowerpoint.exe)
 
 ### cmd内运行
 
